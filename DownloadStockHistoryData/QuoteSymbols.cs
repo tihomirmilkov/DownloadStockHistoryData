@@ -13,9 +13,9 @@ namespace DownloadStockHistoryData
     {
         private List<string> allSymbolChars = new List<string>()
             {
-                "^", "-", ".", ":", "\\",
+                "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
                 "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-                "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
+                "^", "-", ".", ":", "\\",
             };
 
         private int allSymbolCharsCount;
@@ -25,7 +25,7 @@ namespace DownloadStockHistoryData
             allSymbolCharsCount = allSymbolChars.Count;
         }
 
-        private void LoadAllQuotes(int start, string symbol)
+        public void LoadAllQuotes(int start = 0, string symbol = "")
         {
             for (int i = start; i < allSymbolCharsCount; i++)
             {

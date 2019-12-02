@@ -13,7 +13,8 @@ namespace DownloadStockHistoryData
     {
         static void Main(string[] args)
         {
-            var quotes = GetAllQuotes();
+            var quoteSymbols = new QuoteSymbols();
+            quoteSymbols.LoadAllQuotes();
 
             //if (args.Count() > 0)
             //{
