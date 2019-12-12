@@ -32,6 +32,7 @@ namespace DownloadStockHistoryData
                 symbol += allSymbolChars[i];
                 var quotes = CheckAutoCompleteForQuotes(symbol);
 
+                // TODO - BUG fuck "A" returns only 9 results. Must figure out how to check symbols another way.
                 // TODO Check if symbols are < 10
                 // TODO Save in DB
                 // TODO Publish and connect to DB successfully
