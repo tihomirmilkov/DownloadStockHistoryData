@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -36,7 +39,7 @@ namespace LevermannStrategyAutoEvaluator
             result.PE1year = CalculatePE1year(detailsData);
 
             // 5. P/E ratio 5 years
-            result.PE5years = CalculatePE5years(stockQuote);
+            result.PE5years = CalculatePE5years(detailsData);
 
             // 6. Analyst opinions
             result.AnalystOpinions = CalculateAnalystOpinions(stockQuote);
@@ -109,9 +112,39 @@ namespace LevermannStrategyAutoEvaluator
             throw new NotImplementedException();
         }
 
-        private double CalculatePE5years(string stockQuote)
+        private double CalculatePE5years(JObject detailsData)
         {
-            throw new NotImplementedException();
+            if (detailsData == null)
+                return 0;
+
+            // get company short name - best for search
+            string shortName = detailsData["price"]["shortName"].Value<string>();
+
+            // leave only alphanumeric characters
+            Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+            shortName = rgx.Replace(shortName, "");
+
+            // search with above name with auto search
+            var client = new RestClient("https://apidojo-yahoo-finance-v1.p.rapidapi.com/market/auto-complete?lang=en&region=US&query=RTL%20Group");
+            JObject autoCompleteResult = GetData(client);
+            string searchQuoteName = autoCompleteResult["ResultSet"]["Result"][0]["symbol"].Value<string>();
+
+            // get page source from ycharts.com
+            string urlAddress = "https://ycharts.com/companies/" + searchQuoteName + "/pe_ratio";
+            string htmlCode;
+            using (WebClient webClient = new WebClient())
+            {
+                htmlCode = webClient.DownloadString(urlAddress);
+            }
+
+            // get P/E 5 years average text
+            string extract1 = FindSubstringWithBeginAndEnd(htmlCode, "Average</td>", "/td>");
+            string extract2 = FindSubstringWithBeginAndEnd(extract1, "<td class=\"col2\">", "<");
+            string finalContent = Regex.Replace(extract2, @"\s+", string.Empty);
+
+            // convert to double
+            var result = double.Parse(finalContent, System.Globalization.CultureInfo.InvariantCulture);
+            return result;
         }
 
         private double CalculatePE1year(JObject detailsData)
@@ -176,6 +209,14 @@ namespace LevermannStrategyAutoEvaluator
             IRestResponse response = client.Execute(request);
             var data = (JObject)JsonConvert.DeserializeObject(response.Content);
             return data;
+        }
+
+        private string FindSubstringWithBeginAndEnd(string text, string begin, string end)
+        {
+            int from = text.IndexOf(begin) + begin.Length;
+            int to = text.IndexOf(end, from);
+            string result = text.Substring(from, to - from);
+            return result;
         }
     }
 }
