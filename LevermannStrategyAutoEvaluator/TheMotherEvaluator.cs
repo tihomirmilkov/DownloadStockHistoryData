@@ -25,6 +25,7 @@ namespace LevermannStrategyAutoEvaluator
 
             JObject detailsData = GetDetailsData(stockQuote);
             JObject financialsData = GetFinancialsData(stockQuote);
+            string wsjHtmlCode = GetWsjHtmlCode(stockQuote);
 
             // 1. RoE - Return on Equity
             result.RoE = CalculateRoE(detailsData);
@@ -42,7 +43,7 @@ namespace LevermannStrategyAutoEvaluator
             result.PE5years = CalculatePE5years(detailsData);
 
             // 6. Analyst opinions
-            result.AnalystOpinions = CalculateAnalystOpinions(stockQuote);
+            result.AnalystOpinions = CalculateAnalystOpinions(wsjHtmlCode);
 
             // 7. Reactions to quarterly figures relase
             result.ReactionToQuarterlyRelease = CalculateReactionToQuarterlyRelease(stockQuote);
@@ -107,9 +108,33 @@ namespace LevermannStrategyAutoEvaluator
             throw new NotImplementedException();
         }
 
-        private double CalculateAnalystOpinions(string stockQuote)
+        private double CalculateAnalystOpinions(string wsjHtmlCode)
         {
-            throw new NotImplementedException();
+            string extract1 = FindSubstringWithBeginAndEnd(wsjHtmlCode, "<h3>Analyst Ratings <span class=\"hdr_co_name\">", "<td><span class=\"data_lbl\">Consensus</span></td>");
+            string extractBuy = FindSubstringWithBeginAndEnd(extract1, "Buy", "</tr>");
+            string extractHold = FindSubstringWithBeginAndEnd(extract1, "Hold", "</tr>");
+            string extractSell = FindSubstringWithBeginAndEnd(extract1, "Sell", "</tr>");
+
+            string begin = "<span class=\"data_data\">";
+            int lenBegin = begin.Length;
+            string end = "</span>";
+            int lenEnd = end.Length;
+
+            int buyStart = StringOccurrences(extractBuy, begin, 3);
+            string buyCount = FindSubstringWithBeginAndEnd(extractBuy.Substring(buyStart), begin, end);
+            var buyCountFinalShit = double.Parse(buyCount, System.Globalization.CultureInfo.InvariantCulture);
+
+            int holdStart = StringOccurrences(extractHold, begin, 3);
+            string holdCount = FindSubstringWithBeginAndEnd(extractHold.Substring(holdStart), begin, end);
+            var holdCountFinalShit = double.Parse(holdCount, System.Globalization.CultureInfo.InvariantCulture);
+
+            int sellStart = StringOccurrences(extractSell, begin, 3);
+            string sellCount = FindSubstringWithBeginAndEnd(extractSell.Substring(sellStart), begin, end);
+            var sellCountFinalShit = double.Parse(sellCount, System.Globalization.CultureInfo.InvariantCulture);
+
+            double result = (buyCountFinalShit + holdCountFinalShit * 2 + sellCountFinalShit * 3) / (buyCountFinalShit + holdCountFinalShit + sellCountFinalShit);
+
+            return result;
         }
 
         private double CalculatePE5years(JObject detailsData)
@@ -144,7 +169,7 @@ namespace LevermannStrategyAutoEvaluator
 
             // convert to double
             var result = double.Parse(finalContent, System.Globalization.CultureInfo.InvariantCulture);
-            return result;
+            return result / 100; // get percentage
         }
 
         private double CalculatePE1year(JObject detailsData)
@@ -217,6 +242,51 @@ namespace LevermannStrategyAutoEvaluator
             int to = text.IndexOf(end, from);
             string result = text.Substring(from, to - from);
             return result;
+        }
+
+        private string GetWsjHtmlCode(string stockQuote)
+        {
+            // check if stock is US or German-XRTRA
+            int from = stockQuote.IndexOf(".DE");
+            string urlAddress;
+            if (from < 0)
+            {
+                urlAddress = "https://www.wsj.com/market-data/quotes/" + stockQuote + "/research-ratings";
+            }
+            else
+            {
+                urlAddress = "https://www.wsj.com/market-data/quotes/XE/XETR/" + stockQuote.Remove(from) + "/research-ratings";
+            }
+
+            // get page source from wsj.com
+            string htmlCode;
+            using (WebClient webClient = new WebClient())
+            {
+                htmlCode = webClient.DownloadString(urlAddress);
+            }
+
+            return htmlCode;
+        }
+
+        private int StringOccurrences(string text, string pattern, int n)
+        {
+            // Loop through n instances of the string 'text'.
+            int i = 0;
+            int count = 0;
+            while ((i = text.IndexOf(pattern, i)) != -1)
+            {
+                count++;
+                if (count == n)
+                {
+                    return i;
+                }
+                else
+                {
+                    i += pattern.Length;
+                }
+            }
+
+            return -1;
         }
     }
 }

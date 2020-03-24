@@ -11,6 +11,7 @@ namespace LevermannStrategyAutoEvaluator
         static void Main(string[] args)
         {
             var evaluator = new TheMotherEvaluator();
+            //evaluator.GetLevermannParameters("RRTL.DE");
             evaluator.GetLevermannParameters("AAPL");
         }
     }
