@@ -51,7 +51,7 @@ namespace LevermannStrategyAutoEvaluator
             // 8. Profit revision
             // The difference between the analysts’ estimates for earnings per share of 4 weeks ago is compared with the current expectations.
             // This is done for current fiscal year and next fiscal year.
-            result.ProfitRevision = CalculateProfitRevision(stockQuote);
+            result.ProfitRevision = CalculateProfitRevision(wsjHtmlCode);
 
             // 9. Price change 6 months
             result.PriceChange6months = CalculatePriceChange6months(stockQuote);
@@ -68,14 +68,25 @@ namespace LevermannStrategyAutoEvaluator
 
             // 13. Profit growth
             // The difference between the profit forecast for the next year and the profit forecast for the current year.
-            result.ProfitGrowth = CalculateProfitGrowth(stockQuote);
+            result.ProfitGrowth = CalculateProfitGrowth(wsjHtmlCode);
 
             return result;
         }
 
-        private double CalculateProfitGrowth(string stockQuote)
+        private double CalculateProfitGrowth(string wsjHtmlCode)
         {
-            throw new NotImplementedException();
+            string currentYear = DateTime.Now.Year.ToString();
+            string nextYear = (DateTime.Now.Year + 1).ToString();
+
+            string currYearBasic = FindSubstringWithBeginAndEnd(wsjHtmlCode, "FY " + currentYear + " Estimate Trends", "</tbody>");
+            string nextYearBasic = FindSubstringWithBeginAndEnd(wsjHtmlCode, "FY " + nextYear + " Estimate Trends", "</tbody>");
+
+            double currYearCurrent = double.Parse(FindSubstringWithBeginAndEnd(currYearBasic, "</sup>", "</td>"));
+            double nextYearCurrent = double.Parse(FindSubstringWithBeginAndEnd(nextYearBasic, "</sup>", "</td>"));
+
+            double result = (nextYearCurrent - currYearCurrent) * 100 / currYearCurrent;
+
+            return result;
         }
 
         private double CalculateReversalEffect(string stockQuote)
@@ -98,9 +109,24 @@ namespace LevermannStrategyAutoEvaluator
             throw new NotImplementedException();
         }
 
-        private double CalculateProfitRevision(string stockQuote)
+        private double CalculateProfitRevision(string wsjHtmlCode)
         {
-            throw new NotImplementedException();
+            string currentYear = DateTime.Now.Year.ToString();
+            string nextYear = (DateTime.Now.Year + 1).ToString();
+
+            string currYearBasic = FindSubstringWithBeginAndEnd(wsjHtmlCode, "FY " + currentYear + " Estimate Trends", "</tbody>");
+            string nextYearBasic = FindSubstringWithBeginAndEnd(wsjHtmlCode, "FY " + nextYear + " Estimate Trends", "</tbody>");
+
+            double currYearCurrent = double.Parse(FindSubstringWithBeginAndEnd(currYearBasic, "</sup>", "</td>"));
+            double currYear1monthago = double.Parse(FindSubstringWithBeginAndEnd(currYearBasic.Substring(StringOccurrences(currYearBasic, "</sup>", 2)), "</sup>", "</td>"));
+            double nextYearCurrent = double.Parse(FindSubstringWithBeginAndEnd(nextYearBasic, "</sup>", "</td>"));
+            double nextYear1monthago = double.Parse(FindSubstringWithBeginAndEnd(nextYearBasic.Substring(StringOccurrences(nextYearBasic, "</sup>", 2)), "</sup>", "</td>"));
+
+            double currYearMonthChange = (currYearCurrent - currYear1monthago) * 100 / currYear1monthago;
+            double nextYearMonthChange = (nextYearCurrent - nextYear1monthago) * 100 / nextYear1monthago;
+            double result = (currYearMonthChange + nextYearMonthChange) / 2;
+
+            return result;
         }
 
         private double CalculateReactionToQuarterlyRelease(string stockQuote)
