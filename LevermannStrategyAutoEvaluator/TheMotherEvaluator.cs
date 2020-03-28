@@ -60,7 +60,7 @@ namespace LevermannStrategyAutoEvaluator
             result.AnalystOpinions = CalculateAnalystOpinions(wsjHtmlCode);
 
             // 7. Reactions to quarterly figures relase
-            result.ReactionToQuarterlyRelease = CalculateReactionToQuarterlyRelease(detailsData);
+            result.ReactionToQuarterlyRelease = CalculateReactionToQuarterlyRelease(stockQuote, detailsData);
 
             // 8. Profit revision
             // The difference between the analysts’ estimates for earnings per share of 4 weeks ago is compared with the current expectations.
@@ -143,7 +143,7 @@ namespace LevermannStrategyAutoEvaluator
             return result;
         }
 
-        private double CalculateReactionToQuarterlyRelease(JObject detailsData)
+        private double CalculateReactionToQuarterlyRelease(string stockQuote, JObject detailsData)
         {
             // TODO Maybe try first if yahoo finance has the data - https://finance.yahoo.com/calendar/earnings/?symbol=AAPL
 
@@ -159,6 +159,37 @@ namespace LevermannStrategyAutoEvaluator
 
             // get page source from businessinsider.com
             string htmlCode = GetHtmlCode(urlAddress);
+
+            // get last Quaerterly release date
+            string extract1 = FindSubstringWithBeginAndEnd(htmlCode, "<table class=\"table instruments calendar", "/td>");
+            string extract2 = FindSubstringWithBeginAndEnd(extract1, "<td>", "<");
+            string finalContent = Regex.Replace(extract2, @"\s+", string.Empty);
+
+            // get date year
+            int finalContentMonth = int.Parse(finalContent.Substring(0, finalContent.IndexOf("/")));
+            int currMonth = DateTime.Now.Month;
+            int currYear = DateTime.Now.Year;
+
+            // concat string to get full date
+            string quarterlyRleaseDateString;
+            if (currMonth >= finalContentMonth)
+            {
+                quarterlyRleaseDateString = finalContent + "/" + currYear.ToString();
+            }
+            else
+            {
+                quarterlyRleaseDateString = finalContent + "/" + (currYear - 1).ToString();
+            }
+
+            if (stockQuote.Contains(".DE"))
+            {
+                // use DAX Index as benchmark index
+
+            }
+            else
+            {
+                // use S&P 500 Index as benchmark index
+            }
 
             return 0;
         }
