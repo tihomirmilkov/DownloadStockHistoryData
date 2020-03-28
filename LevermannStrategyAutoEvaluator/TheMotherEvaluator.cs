@@ -6,9 +6,12 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RestSharp;
+using System.Windows.Forms;
+using System.Threading;
 
 namespace LevermannStrategyAutoEvaluator
 {
@@ -46,7 +49,7 @@ namespace LevermannStrategyAutoEvaluator
             result.AnalystOpinions = CalculateAnalystOpinions(wsjHtmlCode);
 
             // 7. Reactions to quarterly figures relase
-            result.ReactionToQuarterlyRelease = CalculateReactionToQuarterlyRelease(stockQuote);
+            result.ReactionToQuarterlyRelease = CalculateReactionToQuarterlyRelease(detailsData);
 
             // 8. Profit revision
             // The difference between the analysts’ estimates for earnings per share of 4 weeks ago is compared with the current expectations.
@@ -129,38 +132,58 @@ namespace LevermannStrategyAutoEvaluator
             return result;
         }
 
-        private double CalculateReactionToQuarterlyRelease(string stockQuote)
+        private double CalculateReactionToQuarterlyRelease(JObject detailsData)
         {
-            throw new NotImplementedException();
+            // set search company name - only first word
+            string shortName = detailsData["price"]["shortName"].Value<string>();
+            string firstWord = shortName.Split(' ').First();
+
+            // set from and to dates + formatting
+            string from = DateTime.Now.ToString("MM/dd/yyyy");
+            string to = DateTime.Now.AddMonths(-3).ToString("MM/dd/yyyy");
+
+            string urlAddress = "https://markets.businessinsider.com/earnings-calendar#date=01/01/2020-03/27/2020&name=" + firstWord + "&countries=&eventtypes=99&tab=ALL";
+
+            // get page source from businessinsider.com
+            string htmlCode = GetHtmlCode(urlAddress);
+
+            return 0;
         }
 
         private double CalculateAnalystOpinions(string wsjHtmlCode)
         {
-            string extract1 = FindSubstringWithBeginAndEnd(wsjHtmlCode, "<h3>Analyst Ratings <span class=\"hdr_co_name\">", "<td><span class=\"data_lbl\">Consensus</span></td>");
-            string extractBuy = FindSubstringWithBeginAndEnd(extract1, "Buy", "</tr>");
-            string extractHold = FindSubstringWithBeginAndEnd(extract1, "Hold", "</tr>");
-            string extractSell = FindSubstringWithBeginAndEnd(extract1, "Sell", "</tr>");
+            try
+            {
+                string extract1 = FindSubstringWithBeginAndEnd(wsjHtmlCode, "<h3>Analyst Ratings <span class=\"hdr_co_name\">", "<td><span class=\"data_lbl\">Consensus</span></td>");
+                string extractBuy = FindSubstringWithBeginAndEnd(extract1, "Buy", "</tr>");
+                string extractHold = FindSubstringWithBeginAndEnd(extract1, "Hold", "</tr>");
+                string extractSell = FindSubstringWithBeginAndEnd(extract1, "Sell", "</tr>");
 
-            string begin = "<span class=\"data_data\">";
-            int lenBegin = begin.Length;
-            string end = "</span>";
-            int lenEnd = end.Length;
+                string begin = "<span class=\"data_data\">";
+                int lenBegin = begin.Length;
+                string end = "</span>";
+                int lenEnd = end.Length;
 
-            int buyStart = StringOccurrences(extractBuy, begin, 3);
-            string buyCount = FindSubstringWithBeginAndEnd(extractBuy.Substring(buyStart), begin, end);
-            var buyCountFinalShit = double.Parse(buyCount, System.Globalization.CultureInfo.InvariantCulture);
+                int buyStart = StringOccurrences(extractBuy, begin, 3);
+                string buyCount = FindSubstringWithBeginAndEnd(extractBuy.Substring(buyStart), begin, end);
+                var buyCountFinalShit = double.Parse(buyCount, System.Globalization.CultureInfo.InvariantCulture);
 
-            int holdStart = StringOccurrences(extractHold, begin, 3);
-            string holdCount = FindSubstringWithBeginAndEnd(extractHold.Substring(holdStart), begin, end);
-            var holdCountFinalShit = double.Parse(holdCount, System.Globalization.CultureInfo.InvariantCulture);
+                int holdStart = StringOccurrences(extractHold, begin, 3);
+                string holdCount = FindSubstringWithBeginAndEnd(extractHold.Substring(holdStart), begin, end);
+                var holdCountFinalShit = double.Parse(holdCount, System.Globalization.CultureInfo.InvariantCulture);
 
-            int sellStart = StringOccurrences(extractSell, begin, 3);
-            string sellCount = FindSubstringWithBeginAndEnd(extractSell.Substring(sellStart), begin, end);
-            var sellCountFinalShit = double.Parse(sellCount, System.Globalization.CultureInfo.InvariantCulture);
+                int sellStart = StringOccurrences(extractSell, begin, 3);
+                string sellCount = FindSubstringWithBeginAndEnd(extractSell.Substring(sellStart), begin, end);
+                var sellCountFinalShit = double.Parse(sellCount, System.Globalization.CultureInfo.InvariantCulture);
 
-            double result = (buyCountFinalShit + holdCountFinalShit * 2 + sellCountFinalShit * 3) / (buyCountFinalShit + holdCountFinalShit + sellCountFinalShit);
+                double result = (buyCountFinalShit + holdCountFinalShit * 2 + sellCountFinalShit * 3) / (buyCountFinalShit + holdCountFinalShit + sellCountFinalShit);
 
-            return result;
+                return result;
+            }
+            catch
+            {
+                return 0;
+            }
         }
 
         private double CalculatePE5years(JObject detailsData)
@@ -174,19 +197,17 @@ namespace LevermannStrategyAutoEvaluator
             // leave only alphanumeric characters
             Regex rgx = new Regex("[^a-zA-Z0-9 -]");
             shortName = rgx.Replace(shortName, "");
+            // convert to HTML string to use in URL
+            shortName = Uri.EscapeUriString(shortName);
 
             // search with above name with auto search
-            var client = new RestClient("https://apidojo-yahoo-finance-v1.p.rapidapi.com/market/auto-complete?lang=en&region=US&query=RTL%20Group");
+            var client = new RestClient("https://apidojo-yahoo-finance-v1.p.rapidapi.com/market/auto-complete?lang=en&region=US&query=" + shortName);
             JObject autoCompleteResult = GetData(client);
             string searchQuoteName = autoCompleteResult["ResultSet"]["Result"][0]["symbol"].Value<string>();
 
             // get page source from ycharts.com
             string urlAddress = "https://ycharts.com/companies/" + searchQuoteName + "/pe_ratio";
-            string htmlCode;
-            using (WebClient webClient = new WebClient())
-            {
-                htmlCode = webClient.DownloadString(urlAddress);
-            }
+            string htmlCode = GetHtmlCode(urlAddress);
 
             // get P/E 5 years average text
             string extract1 = FindSubstringWithBeginAndEnd(htmlCode, "Average</td>", "/td>");
@@ -285,11 +306,7 @@ namespace LevermannStrategyAutoEvaluator
             }
 
             // get page source from wsj.com
-            string htmlCode;
-            using (WebClient webClient = new WebClient())
-            {
-                htmlCode = webClient.DownloadString(urlAddress);
-            }
+            string htmlCode = GetHtmlCode(urlAddress);
 
             return htmlCode;
         }
@@ -313,6 +330,27 @@ namespace LevermannStrategyAutoEvaluator
             }
 
             return -1;
+        }
+
+        private string GetHtmlCode(string urlAddress)
+        {
+            string htmlCode;
+            //using (WebClient webClient = new WebClient())
+            //{
+            //    htmlCode = webClient.DownloadString(urlAddress);
+            //}
+
+            WebBrowser wb = new WebBrowser();
+            wb.ScriptErrorsSuppressed = true;
+            wb.Navigate(new Uri(urlAddress));
+            while (wb.ReadyState != WebBrowserReadyState.Complete)
+            {
+                Application.DoEvents();
+            }
+            var doc = wb.Document;
+            htmlCode = doc.Body.InnerHtml;
+
+            return htmlCode;
         }
     }
 }
