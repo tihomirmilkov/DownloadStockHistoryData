@@ -152,10 +152,10 @@ namespace LevermannStrategyAutoEvaluator
             string firstWord = shortName.Split(' ').First();
 
             // set from and to dates + formatting
-            string from = DateTime.Now.ToString("MM/dd/yyyy");
-            string to = DateTime.Now.AddMonths(-3).ToString("MM/dd/yyyy");
+            string from = DateTime.Now.AddMonths(-3).ToString("MM/dd/yyyy");
+            string to = DateTime.Now.ToString("MM/dd/yyyy");
 
-            string urlAddress = "https://markets.businessinsider.com/earnings-calendar#date=01/01/2020-03/27/2020&name=" + firstWord + "&countries=&eventtypes=99&tab=ALL";
+            string urlAddress = "https://markets.businessinsider.com/earnings-calendar#date=" + from + "-" + to + "&name=" + firstWord + "&countries=&eventtypes=99&tab=ALL";
 
             // get page source from businessinsider.com
             string htmlCode = GetHtmlCode(urlAddress);
