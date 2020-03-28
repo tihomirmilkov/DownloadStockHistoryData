@@ -12,14 +12,25 @@ using Newtonsoft.Json.Linq;
 using RestSharp;
 using System.Windows.Forms;
 using System.Threading;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium;
+using System.Reflection;
 
 namespace LevermannStrategyAutoEvaluator
 {
-    class TheMotherEvaluator
+    class TheMotherEvaluator : IDisposable
     {
+        private readonly IWebDriver _driver;
+
         public TheMotherEvaluator()
         {
-                
+            _driver = new ChromeDriver(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
+        }
+
+        public void Dispose()
+        {
+            _driver.Quit();
+            _driver.Dispose();
         }
 
         public LevermannParameters GetLevermannParameters(string stockQuote)
@@ -134,6 +145,8 @@ namespace LevermannStrategyAutoEvaluator
 
         private double CalculateReactionToQuarterlyRelease(JObject detailsData)
         {
+            // TODO Maybe try first if yahoo finance has the data - https://finance.yahoo.com/calendar/earnings/?symbol=AAPL
+
             // set search company name - only first word
             string shortName = detailsData["price"]["shortName"].Value<string>();
             string firstWord = shortName.Split(' ').First();
@@ -332,13 +345,21 @@ namespace LevermannStrategyAutoEvaluator
             return -1;
         }
 
-        private string GetHtmlCode(string urlAddress)
+        private string GetHtmlCode1(string urlAddress)
         {
             string htmlCode;
-            //using (WebClient webClient = new WebClient())
-            //{
-            //    htmlCode = webClient.DownloadString(urlAddress);
-            //}
+
+            using (WebClient webClient = new WebClient())
+            {
+                htmlCode = webClient.DownloadString(urlAddress);
+            }
+
+            return htmlCode;
+        }
+
+        private string GetHtmlCode2(string urlAddress)
+        {
+            string htmlCode;
 
             WebBrowser wb = new WebBrowser();
             wb.ScriptErrorsSuppressed = true;
@@ -349,6 +370,16 @@ namespace LevermannStrategyAutoEvaluator
             }
             var doc = wb.Document;
             htmlCode = doc.Body.InnerHtml;
+
+            return htmlCode;
+        }
+
+        private string GetHtmlCode(string urlAddress)
+        {
+            string htmlCode;
+
+            _driver.Navigate().GoToUrl(urlAddress);
+            htmlCode = _driver.PageSource;
 
             return htmlCode;
         }
