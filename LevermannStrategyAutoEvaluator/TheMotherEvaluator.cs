@@ -171,27 +171,50 @@ namespace LevermannStrategyAutoEvaluator
             int currYear = DateTime.Now.Year;
 
             // concat string to get full date
-            string quarterlyRleaseDateString;
+            int finalContentDay = int.Parse(finalContent.Substring(finalContent.IndexOf("/") + 1));
+            DateTime quarterlyRleaseDate;
             if (currMonth >= finalContentMonth)
             {
-                quarterlyRleaseDateString = finalContent + "/" + currYear.ToString();
+                quarterlyRleaseDate = new DateTime(currYear, finalContentMonth, finalContentDay);
             }
             else
             {
-                quarterlyRleaseDateString = finalContent + "/" + (currYear - 1).ToString();
+                quarterlyRleaseDate = new DateTime(currYear - 1, finalContentMonth, finalContentDay);
             }
 
+            // get Unix Timestamp period - keep in mind the fucking weekends :)
+            int checkIntervalBegin = (int)(quarterlyRleaseDate.AddDays(-2).Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+            int checkIntervalEnd = (int)(quarterlyRleaseDate.AddDays(1).Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+
+            // get stock change
+            JObject stockHistoricalData = GetHistoricalData(stockQuote, checkIntervalBegin, checkIntervalEnd);
+
+            // get benchmark index change
+            JObject benchmarkHistoricalData;
             if (stockQuote.Contains(".DE"))
             {
                 // use DAX Index as benchmark index
-
+                benchmarkHistoricalData = GetHistoricalData("%255EGDAXI", checkIntervalBegin, checkIntervalEnd); // ^GDAXI
             }
             else
             {
                 // use S&P 500 Index as benchmark index
+                benchmarkHistoricalData = GetHistoricalData("%255EGSPC", checkIntervalBegin, checkIntervalEnd); // ^GSPC
             }
 
-            return 0;
+            // finally maaaaaaaaan - get close values for the release date and previous close
+            // prices[0].close
+            double stockReleaseDateClose = stockHistoricalData["prices"][0]["close"].Value<double>();
+            double stockReleaseDatePreviousClose = stockHistoricalData["prices"][1]["close"].Value<double>();
+            double benchmarkReleaseDateClose = benchmarkHistoricalData["prices"][0]["close"].Value<double>();
+            double benchmarkReleaseDatePreviousClose = benchmarkHistoricalData["prices"][1]["close"].Value<double>();
+
+            // tutto finito - calculate differance
+            double stockDifferance = (stockReleaseDateClose - stockReleaseDatePreviousClose) / stockReleaseDatePreviousClose;
+            double benchmarkDifferance = (benchmarkReleaseDateClose - benchmarkReleaseDatePreviousClose) / benchmarkReleaseDatePreviousClose;
+            double stockAndBenchmarkReleaseDatePerformanceDifferanceFAAAAK = stockDifferance - benchmarkDifferance;
+
+            return stockAndBenchmarkReleaseDatePerformanceDifferanceFAAAAK;
         }
 
         private double CalculateAnalystOpinions(string wsjHtmlCode)
@@ -317,7 +340,18 @@ namespace LevermannStrategyAutoEvaluator
             return GetData(client);
         }
 
-        private static JObject GetData(RestClient client)
+        private JObject GetHistoricalData(string stockQuote, int begin, int end)
+        {
+            var client = new RestClient("https://apidojo-yahoo-finance-v1.p.rapidapi.com/stock/v2/get-historical-data?frequency=1d&filter=history&period1=" 
+                                        + begin.ToString()
+                                        + "&period2="
+                                        + end.ToString()
+                                        + "&symbol=" 
+                                        + stockQuote);
+            return GetData(client);
+        }
+
+        private JObject GetData(RestClient client)
         {
             var request = new RestRequest(Method.GET);
             request.AddHeader("x-rapidapi-host", "apidojo-yahoo-finance-v1.p.rapidapi.com");
@@ -410,6 +444,7 @@ namespace LevermannStrategyAutoEvaluator
             string htmlCode;
 
             _driver.Navigate().GoToUrl(urlAddress);
+            Thread.Sleep(2000);
             htmlCode = _driver.PageSource;
 
             return htmlCode;
