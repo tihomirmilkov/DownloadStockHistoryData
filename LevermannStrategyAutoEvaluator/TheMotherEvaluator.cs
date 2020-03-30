@@ -74,7 +74,7 @@ namespace LevermannStrategyAutoEvaluator
             result.PriceChange12months = CalculatePriceChange12months(stockQuote);
 
             // 11. Price momentum
-            result.PriceChange12months = CalculatePriceMomentum(stockQuote);
+            result.PriceMomentum = CalculatePriceMomentum(result.PriceChange6months, result.PriceChange12months);
 
             // 12. Reversal effect
             // Compare to the benchmark index for the last 3 months.
@@ -108,19 +108,32 @@ namespace LevermannStrategyAutoEvaluator
             throw new NotImplementedException();
         }
 
-        private double CalculatePriceMomentum(string stockQuote)
+        private double CalculatePriceMomentum(double priceChange6months, double priceChange12months)
         {
-            throw new NotImplementedException();
+            // +1, if factor 9 = +1 and factor 10 = 0 or -1
+            if (priceChange6months >= 5 && priceChange12months >= -5 && priceChange12months <= 5)
+            {
+                return 1;
+            }
+
+            // -1, if factor 9 = -1 and factor 10 = 0 or +1
+            if (priceChange6months <= -5 && priceChange12months >= -5 && priceChange12months <= 5)
+            {
+                return -1;
+            }
+
+            // 0, in all other cases
+            return 0;
         }
 
         private double CalculatePriceChange12months(string stockQuote)
         {
-            throw new NotImplementedException();
+            return CalculatePriceChange(stockQuote, 12);
         }
 
         private double CalculatePriceChange6months(string stockQuote)
         {
-            throw new NotImplementedException();
+            return CalculatePriceChange(stockQuote, 6);
         }
 
         private double CalculateProfitRevision(string wsjHtmlCode)
@@ -186,7 +199,7 @@ namespace LevermannStrategyAutoEvaluator
             int checkIntervalBegin = (int)(quarterlyRleaseDate.AddDays(-2).Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
             int checkIntervalEnd = (int)(quarterlyRleaseDate.AddDays(1).Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
 
-            // get stock change
+            // get stock history
             JObject stockHistoricalData = GetHistoricalData(stockQuote, checkIntervalBegin, checkIntervalEnd);
 
             // get benchmark index change
@@ -214,43 +227,36 @@ namespace LevermannStrategyAutoEvaluator
             double benchmarkDifferance = (benchmarkReleaseDateClose - benchmarkReleaseDatePreviousClose) / benchmarkReleaseDatePreviousClose;
             double stockAndBenchmarkReleaseDatePerformanceDifferanceFAAAAK = stockDifferance - benchmarkDifferance;
 
-            return stockAndBenchmarkReleaseDatePerformanceDifferanceFAAAAK;
+            return stockAndBenchmarkReleaseDatePerformanceDifferanceFAAAAK * 100;
         }
 
         private double CalculateAnalystOpinions(string wsjHtmlCode)
         {
-            try
-            {
-                string extract1 = FindSubstringWithBeginAndEnd(wsjHtmlCode, "<h3>Analyst Ratings <span class=\"hdr_co_name\">", "<td><span class=\"data_lbl\">Consensus</span></td>");
-                string extractBuy = FindSubstringWithBeginAndEnd(extract1, "Buy", "</tr>");
-                string extractHold = FindSubstringWithBeginAndEnd(extract1, "Hold", "</tr>");
-                string extractSell = FindSubstringWithBeginAndEnd(extract1, "Sell", "</tr>");
+            string extract1 = FindSubstringWithBeginAndEnd(wsjHtmlCode, "<h3>Analyst Ratings <span class=\"hdr_co_name\">", "<td><span class=\"data_lbl\">Consensus</span></td>");
+            string extractBuy = FindSubstringWithBeginAndEnd(extract1, "Buy", "</tr>");
+            string extractHold = FindSubstringWithBeginAndEnd(extract1, "Hold", "</tr>");
+            string extractSell = FindSubstringWithBeginAndEnd(extract1, "Sell", "</tr>");
 
-                string begin = "<span class=\"data_data\">";
-                int lenBegin = begin.Length;
-                string end = "</span>";
-                int lenEnd = end.Length;
+            string begin = "<span class=\"data_data\">";
+            int lenBegin = begin.Length;
+            string end = "</span>";
+            int lenEnd = end.Length;
 
-                int buyStart = StringOccurrences(extractBuy, begin, 3);
-                string buyCount = FindSubstringWithBeginAndEnd(extractBuy.Substring(buyStart), begin, end);
-                var buyCountFinalShit = double.Parse(buyCount, System.Globalization.CultureInfo.InvariantCulture);
+            int buyStart = StringOccurrences(extractBuy, begin, 3);
+            string buyCount = FindSubstringWithBeginAndEnd(extractBuy.Substring(buyStart), begin, end);
+            var buyCountFinalShit = double.Parse(buyCount, System.Globalization.CultureInfo.InvariantCulture);
 
-                int holdStart = StringOccurrences(extractHold, begin, 3);
-                string holdCount = FindSubstringWithBeginAndEnd(extractHold.Substring(holdStart), begin, end);
-                var holdCountFinalShit = double.Parse(holdCount, System.Globalization.CultureInfo.InvariantCulture);
+            int holdStart = StringOccurrences(extractHold, begin, 3);
+            string holdCount = FindSubstringWithBeginAndEnd(extractHold.Substring(holdStart), begin, end);
+            var holdCountFinalShit = double.Parse(holdCount, System.Globalization.CultureInfo.InvariantCulture);
 
-                int sellStart = StringOccurrences(extractSell, begin, 3);
-                string sellCount = FindSubstringWithBeginAndEnd(extractSell.Substring(sellStart), begin, end);
-                var sellCountFinalShit = double.Parse(sellCount, System.Globalization.CultureInfo.InvariantCulture);
+            int sellStart = StringOccurrences(extractSell, begin, 3);
+            string sellCount = FindSubstringWithBeginAndEnd(extractSell.Substring(sellStart), begin, end);
+            var sellCountFinalShit = double.Parse(sellCount, System.Globalization.CultureInfo.InvariantCulture);
 
-                double result = (buyCountFinalShit + holdCountFinalShit * 2 + sellCountFinalShit * 3) / (buyCountFinalShit + holdCountFinalShit + sellCountFinalShit);
+            double result = (buyCountFinalShit + holdCountFinalShit * 2 + sellCountFinalShit * 3) / (buyCountFinalShit + holdCountFinalShit + sellCountFinalShit);
 
-                return result;
-            }
-            catch
-            {
-                return 0;
-            }
+            return result;
         }
 
         private double CalculatePE5years(JObject detailsData)
@@ -283,7 +289,7 @@ namespace LevermannStrategyAutoEvaluator
 
             // convert to double
             var result = double.Parse(finalContent, System.Globalization.CultureInfo.InvariantCulture);
-            return result / 100; // get percentage
+            return result;
         }
 
         private double CalculatePE1year(JObject detailsData)
@@ -302,7 +308,7 @@ namespace LevermannStrategyAutoEvaluator
 
             double stockholderEquity = financialsData["balanceSheetHistory"]["balanceSheetStatements"][0]["totalStockholderEquity"]["raw"].Value<double>();
             double totalAssets = financialsData["balanceSheetHistory"]["balanceSheetStatements"][0]["totalAssets"]["raw"].Value<double>();
-            double equityRatio = stockholderEquity / totalAssets;
+            double equityRatio = stockholderEquity * 100 / totalAssets;
 
             return equityRatio;
         }
@@ -314,7 +320,7 @@ namespace LevermannStrategyAutoEvaluator
 
             double EBIT = financialsData["incomeStatementHistory"]["incomeStatementHistory"][0]["ebit"]["raw"].Value<double>();
             double totalRevenue = financialsData["incomeStatementHistory"]["incomeStatementHistory"][0]["totalRevenue"]["raw"].Value<double>();
-            double EBITMargin = EBIT / totalRevenue;
+            double EBITMargin = EBIT * 100 / totalRevenue;
 
             return EBITMargin;
         }
@@ -325,7 +331,7 @@ namespace LevermannStrategyAutoEvaluator
                 return 0;
 
             double RoE = detailsData["financialData"]["returnOnEquity"]["raw"].Value<double>();
-            return RoE;
+            return RoE * 100;
         }
 
         private JObject GetDetailsData(string stockQuote)
@@ -448,6 +454,25 @@ namespace LevermannStrategyAutoEvaluator
             htmlCode = _driver.PageSource;
 
             return htmlCode;
+        }
+
+        private double CalculatePriceChange(string stockQuote, int monthsBefore)
+        {
+            // get Unix Timestamp period
+            int checkIntervalBegin = (int)(DateTime.Now.Date.AddMonths(-monthsBefore).Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+            int checkIntervalEnd = (int)(DateTime.Now.Date.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+
+            // get stock history
+            JObject stockHistoricalData = GetHistoricalData(stockQuote, checkIntervalBegin, checkIntervalEnd);
+
+            // get prices
+            double before = stockHistoricalData["prices"][stockHistoricalData["prices"].Count() - 1]["close"].Value<double>();
+            double now = stockHistoricalData["prices"][0]["close"].Value<double>();
+
+            // calc diff
+            double diff = (now - before) * 100 / before;
+
+            return diff;
         }
     }
 }
