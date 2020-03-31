@@ -22,15 +22,153 @@ namespace LevermannStrategyAutoEvaluator
     {
         private readonly IWebDriver _driver;
 
+        public LevermannParameters levermannParameters;
+        public LevermannFinalPoints levermannFinalPoints;
+        public string shortQuoteNameAndPrice;
+
         public TheMotherEvaluator()
         {
             _driver = new ChromeDriver(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
+            levermannParameters = new LevermannParameters();
+            levermannFinalPoints = new LevermannFinalPoints();
         }
 
         public void Dispose()
         {
             _driver.Quit();
             _driver.Dispose();
+        }
+
+        public void EvaluateMotherFuckerr(string stockQuote)
+        {
+            levermannParameters = GetLevermannParameters(stockQuote);
+            levermannFinalPoints = GetLevermannFinalPoints(levermannParameters);
+            shortQuoteNameAndPrice = GetShortQuoteNameAndPrice(stockQuote);
+        }
+
+        public string GetShortQuoteNameAndPrice(string stockQuote)
+        {
+            JObject detailsData = GetDetailsData(stockQuote);
+            string shortName = detailsData["price"]["shortName"].Value<string>();
+            string price = detailsData["financialData"]["currentPrice"]["fmt"].Value<string>();
+
+            string result = shortName + " (" + stockQuote + ") - " + price;
+            return result;
+        }
+
+        public LevermannFinalPoints GetLevermannFinalPoints(LevermannParameters levermannParameters)
+        {
+            double tolerance;
+            var result = new LevermannFinalPoints();
+
+            // 1
+            // +1, if the return on equity is greater than 20 %.
+            // 0, if the return on equity is between 10 and 20 %.
+            // - 1, if the return on equity is less than 10 %.
+            tolerance = 0.3;
+            if (levermannParameters.RoE >= 20 - tolerance)
+                result.RoE = 1;
+            if (levermannParameters.RoE < 10 - tolerance)
+                result.RoE = -1;
+
+            // 2
+            // +1, if the EBIT-Margin is greater than 12%.
+            // 0, if the EBIT-Margin is between 6 and 12%.
+            // -1, if the EBIT-Margin is less than 6%.
+            tolerance = 0.2;
+            if (levermannParameters.EBITMargin >= 12 - tolerance)
+                result.EBITMargin = 1;
+            if (levermannParameters.EBITMargin < 6 - tolerance)
+                result.EBITMargin = -1;
+
+            // 3
+            // +1, if the equity ratio is greater than 25%.
+            // 0, if the equity ratio is between 15 and 25%.
+            // -1, if the equity ratio is less than 15%.
+            tolerance = 0.5;
+            if (levermannParameters.EquityRatio >= 25 - tolerance)
+                result.EquityRatio = 1;
+            if (levermannParameters.EquityRatio < 15 - tolerance)
+                result.EquityRatio = -1;
+
+            // 4
+            // +1, if the P/E ratio is less than 12, but greater than 0.
+            // 0 if the P/E ratio is between 12 and 16.
+            // -1, if the P/E ratio is greater than 16 or less than 0.
+            tolerance = 0.2;
+            if (levermannParameters.PE1year > 0 && levermannParameters.PE1year <= 12 + tolerance)
+                result.PE1year = 1;
+            if (levermannParameters.PE1year > 16 + tolerance)
+                result.PE1year = -1;
+
+            // 5
+            if (levermannParameters.PE5years > 0 && levermannParameters.PE5years <= 12 + tolerance)
+                result.PE5years = 1;
+            if (levermannParameters.PE5years > 16 + tolerance)
+                result.PE5years = -1;
+
+            // 6
+            // +1, if the factor is greater than or equal to 2,5.
+            // 0, if the factor is between 1,5 and 2,5.
+            // -1, if the factor is less than or equal to 1,5.
+            tolerance = 0.1;
+            if (levermannParameters.AnalystOpinions >= 2.5 - tolerance)
+                result.AnalystOpinions = 1;
+            if (levermannParameters.AnalystOpinions < 1.5 - tolerance)
+                result.AnalystOpinions = -1;
+
+            // 7
+            // +1, if the adjusted performance is greater than 1%.
+            // -1 if the adjusted performance is less than -1%.
+            tolerance = 0;
+            if (levermannParameters.ReactionToQuarterlyRelease >= 1 - tolerance)
+                result.ReactionToQuarterlyRelease = 1;
+            if (levermannParameters.ReactionToQuarterlyRelease < -1 - tolerance)
+                result.ReactionToQuarterlyRelease = -1;
+
+            // 8
+            // +1, if the profit revision is greater than 5%.
+            // 0, if the profit revision is between -5% and + 5%.
+            // -1 if the profit revision is less than -5%.
+            tolerance = 0.1;
+            if (levermannParameters.ProfitRevision >= 5 - tolerance)
+                result.ProfitRevision = 1;
+            if (levermannParameters.ProfitRevision < -5 - tolerance)
+                result.ProfitRevision = -1;
+
+            // 9
+            // +1, if the price has risen more than + 5% over the period.
+            // 0, if the price has changed between -5% and + 5% during the period.
+            // -1, if the price has fallen more than -5% over the period.
+            tolerance = 0.1;
+            if (levermannParameters.PriceChange6months >= 5 - tolerance)
+                result.PriceChange6months = 1;
+            if (levermannParameters.PriceChange6months < -5 - tolerance)
+                result.PriceChange6months = -1;
+
+            // 10
+            if (levermannParameters.PriceChange12months >= 5 - tolerance)
+                result.PriceChange12months = 1;
+            if (levermannParameters.PriceChange12months < -5 - tolerance)
+                result.PriceChange12months = -1;
+
+            // 11
+            result.PriceMomentum = levermannParameters.PriceMomentum;
+
+            // 12
+            result.ReversalEffect = levermannParameters.ReversalEffect;
+
+            // 13
+            // +1, if earnings growth is greater than 5%.
+            // 0, if earnings growth is between -5% and +5%.
+            // -1, if earnings growth is less than -5%.
+            tolerance = 0.1;
+            if (levermannParameters.ProfitGrowth >= 5 - tolerance)
+                result.ProfitGrowth = 1;
+            if (levermannParameters.ProfitGrowth < -5 - tolerance)
+                result.ProfitGrowth = -1;
+
+            return result;
         }
 
         public LevermannParameters GetLevermannParameters(string stockQuote)
@@ -103,12 +241,61 @@ namespace LevermannStrategyAutoEvaluator
             return result;
         }
 
-        private double CalculateReversalEffect(string stockQuote)
+        private int CalculateReversalEffect(string stockQuote)
         {
-            throw new NotImplementedException();
+            // get Unix Timestamp period
+            int checkIntervalBegin = (int)(DateTime.Now.Date.AddMonths(-3).Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+            int checkIntervalEnd = (int)(DateTime.Now.Date.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+
+            // get stock history
+            JObject stockHistoricalData = GetHistoricalData(stockQuote, checkIntervalBegin, checkIntervalEnd);
+            // get stock prices
+            double stockBefore3months = stockHistoricalData["prices"][stockHistoricalData["prices"].Count() - 1]["close"].Value<double>();
+            double stockBefore2months = stockHistoricalData["prices"][stockHistoricalData["prices"].Count() - 31]["close"].Value<double>();
+            double stockBefore1month = stockHistoricalData["prices"][stockHistoricalData["prices"].Count() - 61]["close"].Value<double>();
+            double stockNow = stockHistoricalData["prices"][0]["close"].Value<double>();
+            // calc stock diff
+            double stockDiff3 = (stockBefore2months - stockBefore3months) * 100 / stockBefore3months;
+            double stockDiff2 = (stockBefore1month - stockBefore2months) * 100 / stockBefore2months;
+            double stockDiff1 = (stockNow - stockBefore1month) * 100 / stockBefore1month;
+
+            // get benchmark history
+            string benchmarkQuote;
+            if (stockQuote.Contains(".DE"))
+            {
+                // use DAX Index as benchmark index
+                benchmarkQuote = "%255EGDAXI"; // ^GDAXI
+            }
+            else
+            {
+                // use S&P 500 Index as benchmark index
+                benchmarkQuote = "%255EGSPC"; // ^GSPC
+            }
+            JObject benchmarkHistoricalData = GetHistoricalData(benchmarkQuote, checkIntervalBegin, checkIntervalEnd);
+            // get benchmark prices
+            double benchmarkBefore3months = benchmarkHistoricalData["prices"][benchmarkHistoricalData["prices"].Count() - 1]["close"].Value<double>();
+            double benchmarkBefore2months = benchmarkHistoricalData["prices"][benchmarkHistoricalData["prices"].Count() - 31]["close"].Value<double>();
+            double benchmarkBefore1month = benchmarkHistoricalData["prices"][benchmarkHistoricalData["prices"].Count() - 61]["close"].Value<double>();
+            double benchmarkNow = benchmarkHistoricalData["prices"][0]["close"].Value<double>();
+            // calc benchmark diff
+            double benchmarkDiff3 = (benchmarkBefore2months - benchmarkBefore3months) * 100 / benchmarkBefore3months;
+            double benchmarkDiff2 = (benchmarkBefore1month - benchmarkBefore2months) * 100 / benchmarkBefore2months;
+            double benchmarkDiff1 = (benchmarkNow - benchmarkBefore1month) * 100 / benchmarkBefore1month;
+
+            if (stockDiff3 > benchmarkDiff3 && stockDiff2 > benchmarkDiff2 && stockDiff1 > benchmarkDiff1)
+            {
+                return -1;
+            }
+
+            if (stockDiff3 < benchmarkDiff3 && stockDiff2 < benchmarkDiff2 && stockDiff1 < benchmarkDiff1)
+            {
+                return 1;
+            }
+
+            return 0;
         }
 
-        private double CalculatePriceMomentum(double priceChange6months, double priceChange12months)
+        private int CalculatePriceMomentum(double priceChange6months, double priceChange12months)
         {
             // +1, if factor 9 = +1 and factor 10 = 0 or -1
             if (priceChange6months >= 5 && priceChange12months >= -5 && priceChange12months <= 5)
@@ -163,6 +350,9 @@ namespace LevermannStrategyAutoEvaluator
             // set search company name - only first word
             string shortName = detailsData["price"]["shortName"].Value<string>();
             string firstWord = shortName.Split(' ').First();
+            // leave only alphanumeric characters
+            Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+            firstWord = rgx.Replace(firstWord, "");
 
             // set from and to dates + formatting
             string from = DateTime.Now.AddMonths(-3).ToString("MM/dd/yyyy");
@@ -297,8 +487,15 @@ namespace LevermannStrategyAutoEvaluator
             if (detailsData == null)
                 return 0;
 
-            double PE1year = detailsData["summaryDetail"]["trailingPE"]["raw"].Value<double>();
-            return PE1year;
+            try
+            {
+                double PE1year = detailsData["summaryDetail"]["trailingPE"]["raw"].Value<double>();
+                return PE1year;
+            }
+            catch
+            {
+                return 0;
+            }
         }
 
         private double CalculateEquityRatio(JObject financialsData)

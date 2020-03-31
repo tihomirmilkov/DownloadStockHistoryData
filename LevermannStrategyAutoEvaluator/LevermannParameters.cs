@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace LevermannStrategyAutoEvaluator
+﻿namespace LevermannStrategyAutoEvaluator
 {
     class LevermannParameters
     {
@@ -23,8 +17,8 @@ namespace LevermannStrategyAutoEvaluator
         public double ProfitRevision { get; set; }
         public double PriceChange6months { get; set; }
         public double PriceChange12months { get; set; }
-        public double PriceMomentum { get; set; }
-        public double ReversalEffect { get; set; }
+        public int PriceMomentum { get; set; }
+        public int ReversalEffect { get; set; }
         public double ProfitGrowth { get; set; }
     }
 }
