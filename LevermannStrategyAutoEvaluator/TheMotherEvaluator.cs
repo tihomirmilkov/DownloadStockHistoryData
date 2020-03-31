@@ -192,7 +192,7 @@ namespace LevermannStrategyAutoEvaluator
             result.PE1year = CalculatePE1year(detailsData);
 
             // 5. P/E ratio 5 years
-            result.PE5years = CalculatePE5years(detailsData);
+            result.PE5years = CalculatePE5years(stockQuote, detailsData);
 
             // 6. Analyst opinions
             result.AnalystOpinions = CalculateAnalystOpinions(wsjHtmlCode);
@@ -449,7 +449,7 @@ namespace LevermannStrategyAutoEvaluator
             return result;
         }
 
-        private double CalculatePE5years(JObject detailsData)
+        private double CalculatePE5years(string stockQuote, JObject detailsData)
         {
             if (detailsData == null)
                 return 0;
@@ -457,9 +457,14 @@ namespace LevermannStrategyAutoEvaluator
             // get company short name - best for search
             string shortName = detailsData["price"]["shortName"].Value<string>();
 
-            // leave only alphanumeric characters
+            // leave only alphanumeric characters and max 2 words
             Regex rgx = new Regex("[^a-zA-Z0-9 -]");
             shortName = rgx.Replace(shortName, "");
+            int secondWordStart = StringOccurrences(shortName, " ", 2);
+            if (secondWordStart > 0)
+            {
+                shortName = shortName.Substring(0, secondWordStart);
+            }
             // convert to HTML string to use in URL
             shortName = Uri.EscapeUriString(shortName);
 
@@ -468,14 +473,31 @@ namespace LevermannStrategyAutoEvaluator
             JObject autoCompleteResult = GetData(client);
             string searchQuoteName = autoCompleteResult["ResultSet"]["Result"][0]["symbol"].Value<string>();
 
-            // get page source from ycharts.com
-            string urlAddress = "https://ycharts.com/companies/" + searchQuoteName + "/pe_ratio";
-            string htmlCode = GetHtmlCode(urlAddress);
 
             // get P/E 5 years average text
-            string extract1 = FindSubstringWithBeginAndEnd(htmlCode, "Average</td>", "/td>");
-            string extract2 = FindSubstringWithBeginAndEnd(extract1, "<td class=\"col2\">", "<");
-            string finalContent = Regex.Replace(extract2, @"\s+", string.Empty);
+            string urlAddress;
+            string htmlCode;
+            string finalContent = "";
+            try
+            {
+                // get page source from ycharts.com
+                urlAddress = "https://ycharts.com/companies/" + searchQuoteName + "/pe_ratio";
+                htmlCode = GetHtmlCode(urlAddress);
+
+                htmlCode = FindSubstringWithBeginAndEnd(htmlCode, "Average</td>", "/td>");
+                htmlCode = FindSubstringWithBeginAndEnd(htmlCode, "<td class=\"col2\">", "<");
+                finalContent = Regex.Replace(htmlCode, @"\s+", string.Empty);
+            }
+            catch // if nothing is found on the page, try with quote name :)
+            {
+                // get page source from ycharts.com
+                urlAddress = "https://ycharts.com/companies/" + stockQuote + "/pe_ratio";
+                htmlCode = GetHtmlCode(urlAddress);
+
+                htmlCode = FindSubstringWithBeginAndEnd(htmlCode, "Average</td>", "/td>");
+                htmlCode = FindSubstringWithBeginAndEnd(htmlCode, "<td class=\"col2\">", "<");
+                finalContent = Regex.Replace(htmlCode, @"\s+", string.Empty);
+            }
 
             // convert to double
             var result = double.Parse(finalContent, System.Globalization.CultureInfo.InvariantCulture);
