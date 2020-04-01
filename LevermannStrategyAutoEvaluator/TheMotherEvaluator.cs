@@ -39,10 +39,10 @@ namespace LevermannStrategyAutoEvaluator
             _driver.Dispose();
         }
 
-        public void EvaluateMotherFuckerr(string stockQuote)
+        public void EvaluateMotherFuckerr(string stockQuote, bool isFinancial = false)
         {
             levermannParameters = GetLevermannParameters(stockQuote);
-            levermannFinalPoints = GetLevermannFinalPoints(levermannParameters);
+            levermannFinalPoints = GetLevermannFinalPoints(levermannParameters, isFinancial);
             shortQuoteNameAndPrice = GetShortQuoteNameAndPrice(stockQuote);
         }
 
@@ -56,7 +56,7 @@ namespace LevermannStrategyAutoEvaluator
             return result;
         }
 
-        public LevermannFinalPoints GetLevermannFinalPoints(LevermannParameters levermannParameters)
+        public LevermannFinalPoints GetLevermannFinalPoints(LevermannParameters levermannParameters, bool isFinancial = false)
         {
             double tolerance;
             var result = new LevermannFinalPoints();
@@ -80,6 +80,8 @@ namespace LevermannStrategyAutoEvaluator
                 result.EBITMargin = 1;
             if (levermannParameters.EBITMargin < 6 - tolerance)
                 result.EBITMargin = -1;
+            if (isFinancial)
+                result.EBITMargin = 0;
 
             // 3
             // +1, if the equity ratio is greater than 25%.
@@ -90,6 +92,13 @@ namespace LevermannStrategyAutoEvaluator
                 result.EquityRatio = 1;
             if (levermannParameters.EquityRatio < 15 - tolerance)
                 result.EquityRatio = -1;
+            if (isFinancial)
+            {
+                if (levermannParameters.EquityRatio >= 10 - tolerance)
+                    result.EquityRatio = 1;
+                if (levermannParameters.EquityRatio < 5 - tolerance)
+                    result.EquityRatio = -1;
+            }
 
             // 4
             // +1, if the P/E ratio is less than 12, but greater than 0.
@@ -423,9 +432,9 @@ namespace LevermannStrategyAutoEvaluator
         private double CalculateAnalystOpinions(string wsjHtmlCode)
         {
             string extract1 = FindSubstringWithBeginAndEnd(wsjHtmlCode, "<h3>Analyst Ratings <span class=\"hdr_co_name\">", "<td><span class=\"data_lbl\">Consensus</span></td>");
-            string extractBuy = FindSubstringWithBeginAndEnd(extract1, "Buy", "</tr>");
-            string extractHold = FindSubstringWithBeginAndEnd(extract1, "Hold", "</tr>");
-            string extractSell = FindSubstringWithBeginAndEnd(extract1, "Sell", "</tr>");
+            string extractBuy = FindSubstringWithBeginAndEnd(extract1, ">Buy<", "</tr>");
+            string extractHold = FindSubstringWithBeginAndEnd(extract1, ">Hold<", "</tr>");
+            string extractSell = FindSubstringWithBeginAndEnd(extract1, ">Sell<", "</tr>");
 
             string begin = "<span class=\"data_data\">";
             int lenBegin = begin.Length;
@@ -465,13 +474,28 @@ namespace LevermannStrategyAutoEvaluator
             {
                 shortName = shortName.Substring(0, secondWordStart);
             }
-            // convert to HTML string to use in URL
-            shortName = Uri.EscapeUriString(shortName);
 
             // search with above name with auto search
-            var client = new RestClient("https://apidojo-yahoo-finance-v1.p.rapidapi.com/market/auto-complete?lang=en&region=US&query=" + shortName);
-            JObject autoCompleteResult = GetData(client);
-            string searchQuoteName = autoCompleteResult["ResultSet"]["Result"][0]["symbol"].Value<string>();
+            string searchQuoteName;
+            try
+            {
+                // convert to HTML string to use in URL
+                string shortNameUri = Uri.EscapeUriString(shortName);
+                // search
+                var client = new RestClient("https://apidojo-yahoo-finance-v1.p.rapidapi.com/market/auto-complete?lang=en&region=US&query=" + shortNameUri);
+                JObject autoCompleteResult = GetData(client);
+                searchQuoteName = autoCompleteResult["ResultSet"]["Result"][0]["symbol"].Value<string>();
+            }
+            catch // in case short name is too long - take just first word
+            {
+                shortName = shortName.Split(' ').First();
+                // convert to HTML string to use in URL
+                string shortNameUri = Uri.EscapeUriString(shortName);
+                // search
+                var client = new RestClient("https://apidojo-yahoo-finance-v1.p.rapidapi.com/market/auto-complete?lang=en&region=US&query=" + shortNameUri);
+                JObject autoCompleteResult = GetData(client);
+                searchQuoteName = autoCompleteResult["ResultSet"]["Result"][0]["symbol"].Value<string>();
+            }
 
 
             // get P/E 5 years average text
