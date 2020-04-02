@@ -245,7 +245,7 @@ namespace LevermannStrategyAutoEvaluator
             double currYearCurrent = double.Parse(FindSubstringWithBeginAndEnd(currYearBasic, "</sup>", "</td>"));
             double nextYearCurrent = double.Parse(FindSubstringWithBeginAndEnd(nextYearBasic, "</sup>", "</td>"));
 
-            double result = (nextYearCurrent - currYearCurrent) * 100 / currYearCurrent;
+            double result = (nextYearCurrent - currYearCurrent) * 100 / Math.Abs(currYearCurrent);
 
             return result;
         }
@@ -345,8 +345,8 @@ namespace LevermannStrategyAutoEvaluator
             double nextYearCurrent = double.Parse(FindSubstringWithBeginAndEnd(nextYearBasic, "</sup>", "</td>"));
             double nextYear1monthago = double.Parse(FindSubstringWithBeginAndEnd(nextYearBasic.Substring(StringOccurrences(nextYearBasic, "</sup>", 2)), "</sup>", "</td>"));
 
-            double currYearMonthChange = (currYearCurrent - currYear1monthago) * 100 / currYear1monthago;
-            double nextYearMonthChange = (nextYearCurrent - nextYear1monthago) * 100 / nextYear1monthago;
+            double currYearMonthChange = (currYearCurrent - currYear1monthago) * 100 / Math.Abs(currYear1monthago);
+            double nextYearMonthChange = (nextYearCurrent - nextYear1monthago) * 100 / Math.Abs(nextYear1monthago);
             double result = (currYearMonthChange + nextYearMonthChange) / 2;
 
             return result;
