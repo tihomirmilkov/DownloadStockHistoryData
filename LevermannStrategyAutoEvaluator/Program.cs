@@ -17,7 +17,7 @@ namespace LevermannStrategyAutoEvaluator
             Application.SetCompatibleTextRenderingDefault(false);
 
             var evaluator = new TheMotherEvaluator();
-            evaluator.EvaluateMotherFuckerr("LHA.DE", false); // "AAPL" // "RRTL.DE" // ADS.DE
+            evaluator.EvaluateMotherFuckerr("DKS", false); // "AAPL" // "RRTL.DE" // ADS.DE
 
             Console.WriteLine(evaluator.shortQuoteNameAndPrice);
             Console.WriteLine("1. {0:0.00}% {1}{2}", 

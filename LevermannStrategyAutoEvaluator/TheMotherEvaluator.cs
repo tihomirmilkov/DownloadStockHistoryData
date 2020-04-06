@@ -360,7 +360,7 @@ namespace LevermannStrategyAutoEvaluator
             string shortName = detailsData["price"]["shortName"].Value<string>();
             string firstWord = shortName.Split(' ').First();
             // leave only alphanumeric characters
-            Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+            Regex rgx = new Regex("[^a-zA-Z0-9 -']");
             firstWord = rgx.Replace(firstWord, "");
 
             // set from and to dates + formatting
