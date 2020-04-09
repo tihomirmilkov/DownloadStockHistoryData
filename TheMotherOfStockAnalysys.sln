@@ -3,10 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.421
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DownloadStockHistoryData", "DownloadStockHistoryData\DownloadStockHistoryData.csproj", "{A0886CA9-79B9-4385-982F-AFC222810C16}"
-EndProject
-Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "Stocks", "Stocks\Stocks.sqlproj", "{1C90A896-C36C-47DA-8951-275B3102D1CC}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LevermannStrategyAutoEvaluator", "LevermannStrategyAutoEvaluator\LevermannStrategyAutoEvaluator.csproj", "{070A1743-3009-40BF-91B9-2EE3EB11EE88}"
 EndProject
 Global
@@ -15,16 +11,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A0886CA9-79B9-4385-982F-AFC222810C16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A0886CA9-79B9-4385-982F-AFC222810C16}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A0886CA9-79B9-4385-982F-AFC222810C16}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A0886CA9-79B9-4385-982F-AFC222810C16}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1C90A896-C36C-47DA-8951-275B3102D1CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1C90A896-C36C-47DA-8951-275B3102D1CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1C90A896-C36C-47DA-8951-275B3102D1CC}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
-		{1C90A896-C36C-47DA-8951-275B3102D1CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1C90A896-C36C-47DA-8951-275B3102D1CC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1C90A896-C36C-47DA-8951-275B3102D1CC}.Release|Any CPU.Deploy.0 = Release|Any CPU
 		{070A1743-3009-40BF-91B9-2EE3EB11EE88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{070A1743-3009-40BF-91B9-2EE3EB11EE88}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{070A1743-3009-40BF-91B9-2EE3EB11EE88}.Release|Any CPU.ActiveCfg = Release|Any CPU
