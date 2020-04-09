@@ -15,6 +15,7 @@ using System.Threading;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium;
 using System.Reflection;
+using LevermannStrategyAutoEvaluator.Data;
 
 namespace LevermannStrategyAutoEvaluator
 {
@@ -22,15 +23,15 @@ namespace LevermannStrategyAutoEvaluator
     {
         private readonly IWebDriver _driver;
 
-        public LevermannParameters levermannParameters;
-        public LevermannFinalPoints levermannFinalPoints;
+        public LevermannParameter levermannParameters;
+        public LevermannFinalPoint levermannFinalPoints;
         public string shortQuoteNameAndPrice;
 
         public TheMotherEvaluator()
         {
             _driver = new ChromeDriver(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
-            levermannParameters = new LevermannParameters();
-            levermannFinalPoints = new LevermannFinalPoints();
+            levermannParameters = new LevermannParameter();
+            levermannFinalPoints = new LevermannFinalPoint();
         }
 
         public void Dispose()
@@ -56,10 +57,10 @@ namespace LevermannStrategyAutoEvaluator
             return result;
         }
 
-        public LevermannFinalPoints GetLevermannFinalPoints(LevermannParameters levermannParameters, bool isFinancial = false)
+        public LevermannFinalPoint GetLevermannFinalPoints(LevermannParameter levermannParameters, bool isFinancial = false)
         {
             double tolerance;
-            var result = new LevermannFinalPoints();
+            var result = new LevermannFinalPoint();
 
             // 1
             // +1, if the return on equity is greater than 20 %.
@@ -180,9 +181,9 @@ namespace LevermannStrategyAutoEvaluator
             return result;
         }
 
-        public LevermannParameters GetLevermannParameters(string stockQuote)
+        public LevermannParameter GetLevermannParameters(string stockQuote)
         {
-            var result = new LevermannParameters();
+            var result = new LevermannParameter();
 
             JObject detailsData = GetDetailsData(stockQuote);
             JObject financialsData = GetFinancialsData(stockQuote);

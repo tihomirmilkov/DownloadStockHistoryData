@@ -1,12 +1,13 @@
-﻿namespace LevermannStrategyAutoEvaluator
+﻿namespace LevermannStrategyAutoEvaluator.Data
 {
-    class LevermannParameters
+    public class LevermannParameter
     {
-        public LevermannParameters()
+        public LevermannParameter()
         {
                 
         }
 
+        public int Id { get; set; }
         public double RoE { get; set; }
         public double EBITMargin { get; set; }
         public double EquityRatio { get; set; }

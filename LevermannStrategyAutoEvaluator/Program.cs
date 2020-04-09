@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LevermannStrategyAutoEvaluator.Data;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,7 +18,8 @@ namespace LevermannStrategyAutoEvaluator
             Application.SetCompatibleTextRenderingDefault(false);
 
             var evaluator = new TheMotherEvaluator();
-            evaluator.EvaluateMotherFuckerr("DKS", false); // "AAPL" // "RRTL.DE" // ADS.DE
+            string quoteName = "RRTL.DE"; // "AAPL" // "RRTL.DE" // ADS.DE
+            evaluator.EvaluateMotherFuckerr(quoteName, false); 
 
             Console.WriteLine(evaluator.shortQuoteNameAndPrice);
             Console.WriteLine("1. {0:0.00}% {1}{2}", 
@@ -49,6 +51,18 @@ namespace LevermannStrategyAutoEvaluator
 
             int total = evaluator.levermannFinalPoints.GetTotalPoints();
             Console.WriteLine("overall: {0}{1}", total > 0 ? "+" : "", total);
+
+            using (var ctx = new DataContext())
+            {
+                Quote quote = new Quote();
+                quote.Date = DateTime.Now;
+                quote.QuoteName = quoteName;
+                quote.LevermannFinalPoint = evaluator.levermannFinalPoints;
+                quote.LevermannParameter = evaluator.levermannParameters;
+
+                ctx.Quotes.Add(quote);
+                ctx.SaveChanges();
+            }
 
             Console.WriteLine("Press enter to close...");
             Console.ReadLine();
