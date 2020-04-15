@@ -503,6 +503,7 @@ namespace LevermannStrategyAutoEvaluator
             string urlAddress;
             string htmlCode;
             string finalContent = "";
+            double result = 0.0;
             try
             {
                 // get page source from ycharts.com
@@ -512,6 +513,8 @@ namespace LevermannStrategyAutoEvaluator
                 htmlCode = FindSubstringWithBeginAndEnd(htmlCode, "Average</td>", "/td>");
                 htmlCode = FindSubstringWithBeginAndEnd(htmlCode, "<td class=\"col2\">", "<");
                 finalContent = Regex.Replace(htmlCode, @"\s+", string.Empty);
+                // convert to double
+                result = double.Parse(finalContent, System.Globalization.CultureInfo.InvariantCulture);
             }
             catch // if nothing is found on the page, try with quote name :)
             {
@@ -522,10 +525,10 @@ namespace LevermannStrategyAutoEvaluator
                 htmlCode = FindSubstringWithBeginAndEnd(htmlCode, "Average</td>", "/td>");
                 htmlCode = FindSubstringWithBeginAndEnd(htmlCode, "<td class=\"col2\">", "<");
                 finalContent = Regex.Replace(htmlCode, @"\s+", string.Empty);
+                // convert to double
+                result = double.Parse(finalContent, System.Globalization.CultureInfo.InvariantCulture);
             }
 
-            // convert to double
-            var result = double.Parse(finalContent, System.Globalization.CultureInfo.InvariantCulture);
             return result;
         }
 
