@@ -276,6 +276,11 @@ namespace LevermannStrategyAutoEvaluator
                 // use DAX Index as benchmark index
                 benchmarkQuote = "%255EGDAXI"; // ^GDAXI
             }
+            else if (stockQuote.Contains(".AS"))
+            {
+                // use AEX Index as benchmark index
+                benchmarkQuote = "%255EAEX"; // ^AEX
+            }
             else
             {
                 // use S&P 500 Index as benchmark index
@@ -409,6 +414,11 @@ namespace LevermannStrategyAutoEvaluator
                 // use DAX Index as benchmark index
                 benchmarkHistoricalData = GetHistoricalData("%255EGDAXI", checkIntervalBegin, checkIntervalEnd); // ^GDAXI
             }
+            else if (stockQuote.Contains(".AS"))
+            {
+                // use DAX Index as benchmark index
+                benchmarkHistoricalData = GetHistoricalData("%255EAEX", checkIntervalBegin, checkIntervalEnd); // ^AEX
+            }
             else
             {
                 // use S&P 500 Index as benchmark index
@@ -500,34 +510,49 @@ namespace LevermannStrategyAutoEvaluator
 
 
             // get P/E 5 years average text
+            try
+            {
+                // get page source from ycharts.com
+                return ExtractPageFromYcharts(searchQuoteName);
+            }
+            catch // if nothing is found on the page, try with quote name :)
+            {
+                try
+                {
+                    // get page source from ycharts.com
+                    return ExtractPageFromYcharts(stockQuote);
+                }
+                catch
+                {
+                    try
+                    {
+                        // get page source from ycharts.com
+                        return ExtractPageFromYcharts(searchQuoteName.Replace('-', '.'));
+                    }
+                    catch
+                    {
+                        // get page source from ycharts.com
+                        return ExtractPageFromYcharts(stockQuote.Replace('-', '.'));
+                    }
+                }
+            }
+        }
+
+        private double ExtractPageFromYcharts(string searchName)
+        {
             string urlAddress;
             string htmlCode;
             string finalContent = "";
             double result = 0.0;
-            try
-            {
-                // get page source from ycharts.com
-                urlAddress = "https://ycharts.com/companies/" + searchQuoteName + "/pe_ratio";
-                htmlCode = GetHtmlCode(urlAddress);
 
-                htmlCode = FindSubstringWithBeginAndEnd(htmlCode, "Average</td>", "/td>");
-                htmlCode = FindSubstringWithBeginAndEnd(htmlCode, "<td class=\"col2\">", "<");
-                finalContent = Regex.Replace(htmlCode, @"\s+", string.Empty);
-                // convert to double
-                result = double.Parse(finalContent, System.Globalization.CultureInfo.InvariantCulture);
-            }
-            catch // if nothing is found on the page, try with quote name :)
-            {
-                // get page source from ycharts.com
-                urlAddress = "https://ycharts.com/companies/" + stockQuote + "/pe_ratio";
-                htmlCode = GetHtmlCode(urlAddress);
+            urlAddress = "https://ycharts.com/companies/" + searchName + "/pe_ratio";
+            htmlCode = GetHtmlCode(urlAddress);
 
-                htmlCode = FindSubstringWithBeginAndEnd(htmlCode, "Average</td>", "/td>");
-                htmlCode = FindSubstringWithBeginAndEnd(htmlCode, "<td class=\"col2\">", "<");
-                finalContent = Regex.Replace(htmlCode, @"\s+", string.Empty);
-                // convert to double
-                result = double.Parse(finalContent, System.Globalization.CultureInfo.InvariantCulture);
-            }
+            htmlCode = FindSubstringWithBeginAndEnd(htmlCode, "Average</td>", "/td>");
+            htmlCode = FindSubstringWithBeginAndEnd(htmlCode, "<td class=\"col2\">", "<");
+            finalContent = Regex.Replace(htmlCode, @"\s+", string.Empty);
+            // convert to double
+            result = double.Parse(finalContent, System.Globalization.CultureInfo.InvariantCulture);
 
             return result;
         }
@@ -624,16 +649,21 @@ namespace LevermannStrategyAutoEvaluator
 
         private string GetWsjHtmlCode(string stockQuote)
         {
-            // check if stock is US or German-XRTRA
-            int from = stockQuote.IndexOf(".DE");
+            // check if stock is US or German-XRTRA or Nederlands-XAMS
+            int fromXETRA = stockQuote.IndexOf(".DE");
+            int fromXAMS = stockQuote.IndexOf(".AS");
             string urlAddress;
-            if (from < 0)
+            if (fromXETRA >= 0)
             {
-                urlAddress = "https://www.wsj.com/market-data/quotes/" + stockQuote + "/research-ratings";
+                urlAddress = "https://www.wsj.com/market-data/quotes/XE/XETR/" + stockQuote.Remove(fromXETRA) + "/research-ratings";
+            }
+            else if (fromXAMS >= 0)
+            {
+                urlAddress = "https://www.wsj.com/market-data/quotes/NL/XAMS/" + stockQuote.Remove(fromXAMS) + "/research-ratings";
             }
             else
             {
-                urlAddress = "https://www.wsj.com/market-data/quotes/XE/XETR/" + stockQuote.Remove(from) + "/research-ratings";
+                urlAddress = "https://www.wsj.com/market-data/quotes/" + stockQuote + "/research-ratings";
             }
 
             // get page source from wsj.com
