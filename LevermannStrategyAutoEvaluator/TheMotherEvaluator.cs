@@ -260,10 +260,16 @@ namespace LevermannStrategyAutoEvaluator
             // get stock history
             JObject stockHistoricalData = GetHistoricalData(stockQuote, checkIntervalBegin, checkIntervalEnd);
             // get stock prices
-            double stockBefore3months = stockHistoricalData["prices"][stockHistoricalData["prices"].Count() - 1]["close"].Value<double>();
-            double stockBefore2months = stockHistoricalData["prices"][stockHistoricalData["prices"].Count() - 31]["close"].Value<double>();
-            double stockBefore1month = stockHistoricalData["prices"][stockHistoricalData["prices"].Count() - 61]["close"].Value<double>();
-            double stockNow = stockHistoricalData["prices"][0]["close"].Value<double>();
+            int count = stockHistoricalData["prices"].Count();
+            double stockBefore3months, stockBefore2months, stockBefore1month, stockNow;
+            try { stockBefore3months = stockHistoricalData["prices"][count - 1]["close"].Value<double>(); }
+            catch { stockBefore3months = stockHistoricalData["prices"][count - 2]["close"].Value<double>(); }
+            try { stockBefore2months = stockHistoricalData["prices"][count - 31]["close"].Value<double>(); }
+            catch { stockBefore2months = stockHistoricalData["prices"][count - 32]["close"].Value<double>(); }
+            try { stockBefore1month = stockHistoricalData["prices"][count - 61]["close"].Value<double>(); }
+            catch { stockBefore1month = stockHistoricalData["prices"][count - 60]["close"].Value<double>(); }
+            try { stockNow = stockHistoricalData["prices"][0]["close"].Value<double>(); }
+            catch { stockNow = stockHistoricalData["prices"][1]["close"].Value<double>(); }
             // calc stock diff
             double stockDiff3 = (stockBefore2months - stockBefore3months) * 100 / stockBefore3months;
             double stockDiff2 = (stockBefore1month - stockBefore2months) * 100 / stockBefore2months;
@@ -288,10 +294,16 @@ namespace LevermannStrategyAutoEvaluator
             }
             JObject benchmarkHistoricalData = GetHistoricalData(benchmarkQuote, checkIntervalBegin, checkIntervalEnd);
             // get benchmark prices
-            double benchmarkBefore3months = benchmarkHistoricalData["prices"][benchmarkHistoricalData["prices"].Count() - 1]["close"].Value<double>();
-            double benchmarkBefore2months = benchmarkHistoricalData["prices"][benchmarkHistoricalData["prices"].Count() - 31]["close"].Value<double>();
-            double benchmarkBefore1month = benchmarkHistoricalData["prices"][benchmarkHistoricalData["prices"].Count() - 61]["close"].Value<double>();
-            double benchmarkNow = benchmarkHistoricalData["prices"][0]["close"].Value<double>();
+            count = benchmarkHistoricalData["prices"].Count();
+            double benchmarkBefore3months, benchmarkBefore2months, benchmarkBefore1month, benchmarkNow;
+            try { benchmarkBefore3months = benchmarkHistoricalData["prices"][count - 1]["close"].Value<double>(); }
+            catch { benchmarkBefore3months = benchmarkHistoricalData["prices"][count - 2]["close"].Value<double>(); }
+            try { benchmarkBefore2months = benchmarkHistoricalData["prices"][count - 31]["close"].Value<double>(); }
+            catch { benchmarkBefore2months = benchmarkHistoricalData["prices"][count - 32]["close"].Value<double>(); }
+            try { benchmarkBefore1month = benchmarkHistoricalData["prices"][count - 61]["close"].Value<double>(); }
+            catch { benchmarkBefore1month = benchmarkHistoricalData["prices"][count - 60]["close"].Value<double>(); }
+            try { benchmarkNow = benchmarkHistoricalData["prices"][0]["close"].Value<double>(); }
+            catch { benchmarkNow = benchmarkHistoricalData["prices"][1]["close"].Value<double>(); }
             // calc benchmark diff
             double benchmarkDiff3 = (benchmarkBefore2months - benchmarkBefore3months) * 100 / benchmarkBefore3months;
             double benchmarkDiff2 = (benchmarkBefore1month - benchmarkBefore2months) * 100 / benchmarkBefore2months;
@@ -401,7 +413,7 @@ namespace LevermannStrategyAutoEvaluator
             }
 
             // get Unix Timestamp period - keep in mind the fucking weekends :)
-            int checkIntervalBegin = (int)(quarterlyRleaseDate.AddDays(-2).Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+            int checkIntervalBegin = (int)(quarterlyRleaseDate.AddDays(-3).Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
             int checkIntervalEnd = (int)(quarterlyRleaseDate.AddDays(1).Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
 
             // get stock history
@@ -620,11 +632,11 @@ namespace LevermannStrategyAutoEvaluator
 
         private JObject GetHistoricalData(string stockQuote, int begin, int end)
         {
-            var client = new RestClient("https://apidojo-yahoo-finance-v1.p.rapidapi.com/stock/v2/get-historical-data?frequency=1d&filter=history&period1=" 
+            var client = new RestClient("https://apidojo-yahoo-finance-v1.p.rapidapi.com/stock/v2/get-historical-data?frequency=1d&filter=history&period1="
                                         + begin.ToString()
                                         + "&period2="
                                         + end.ToString()
-                                        + "&symbol=" 
+                                        + "&symbol="
                                         + stockQuote);
             return GetData(client);
         }
@@ -727,7 +739,7 @@ namespace LevermannStrategyAutoEvaluator
             string htmlCode;
 
             _driver.Navigate().GoToUrl(urlAddress);
-            Thread.Sleep(2000);
+            Thread.Sleep(3000);
             htmlCode = _driver.PageSource;
 
             return htmlCode;
