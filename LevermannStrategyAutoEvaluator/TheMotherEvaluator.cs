@@ -755,8 +755,17 @@ namespace LevermannStrategyAutoEvaluator
             JObject stockHistoricalData = GetHistoricalData(stockQuote, checkIntervalBegin, checkIntervalEnd);
 
             // get prices
-            double before = stockHistoricalData["prices"][stockHistoricalData["prices"].Count() - 1]["close"].Value<double>();
-            double now = stockHistoricalData["prices"][0]["close"].Value<double>();
+            double before, now;
+            try
+            {
+                before = stockHistoricalData["prices"][stockHistoricalData["prices"].Count() - 1]["close"].Value<double>();
+                now = stockHistoricalData["prices"][0]["close"].Value<double>();
+            }
+            catch
+            {
+                before = stockHistoricalData["prices"][stockHistoricalData["prices"].Count() - 2]["close"].Value<double>();
+                now = stockHistoricalData["prices"][1]["close"].Value<double>();
+            }
 
             // calc diff
             double diff = (now - before) * 100 / before;
