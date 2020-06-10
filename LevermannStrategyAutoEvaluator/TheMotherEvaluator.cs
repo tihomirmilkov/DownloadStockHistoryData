@@ -614,7 +614,16 @@ namespace LevermannStrategyAutoEvaluator
             if (detailsData == null)
                 return 0;
 
-            double RoE = detailsData["financialData"]["returnOnEquity"]["raw"].Value<double>();
+            double RoE;
+            try
+            {
+                RoE = detailsData["financialData"]["returnOnEquity"]["raw"].Value<double>();
+            }
+            catch
+            {
+                RoE = 0;
+            }
+
             return RoE * 100;
         }
 
