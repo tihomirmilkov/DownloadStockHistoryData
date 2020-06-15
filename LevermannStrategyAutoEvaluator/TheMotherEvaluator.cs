@@ -287,6 +287,11 @@ namespace LevermannStrategyAutoEvaluator
                 // use AEX Index as benchmark index
                 benchmarkQuote = "%255EAEX"; // ^AEX
             }
+            else if (stockQuote.Contains(".PA"))
+            {
+                // use CAC 40 as benchmark index
+                benchmarkQuote = "%255EFCHI"; // ^FCHI
+            }
             else
             {
                 // use S&P 500 Index as benchmark index
@@ -428,8 +433,13 @@ namespace LevermannStrategyAutoEvaluator
             }
             else if (stockQuote.Contains(".AS"))
             {
-                // use DAX Index as benchmark index
+                // use AEX Index as benchmark index
                 benchmarkHistoricalData = GetHistoricalData("%255EAEX", checkIntervalBegin, checkIntervalEnd); // ^AEX
+            }
+            else if (stockQuote.Contains(".PA"))
+            {
+                // use CAC 40 Index as benchmark index
+                benchmarkHistoricalData = GetHistoricalData("%255EFCHI", checkIntervalBegin, checkIntervalEnd); // ^FCHI
             }
             else
             {
@@ -670,9 +680,10 @@ namespace LevermannStrategyAutoEvaluator
 
         private string GetWsjHtmlCode(string stockQuote)
         {
-            // check if stock is US or German-XRTRA or Nederlands-XAMS
+            // check if stock is US or German-XRTRA or Nederlands-XAMS or Paris-XPAR
             int fromXETRA = stockQuote.IndexOf(".DE");
             int fromXAMS = stockQuote.IndexOf(".AS");
+            int fromXPAR = stockQuote.IndexOf(".PA");
             string urlAddress;
             if (fromXETRA >= 0)
             {
@@ -681,6 +692,10 @@ namespace LevermannStrategyAutoEvaluator
             else if (fromXAMS >= 0)
             {
                 urlAddress = "https://www.wsj.com/market-data/quotes/NL/XAMS/" + stockQuote.Remove(fromXAMS) + "/research-ratings";
+            }
+            else if (fromXPAR >= 0)
+            {
+                urlAddress = "https://www.wsj.com/market-data/quotes/FR/XPAR/" + stockQuote.Remove(fromXPAR) + "/research-ratings";
             }
             else
             {
