@@ -18,7 +18,7 @@ namespace LevermannStrategyAutoEvaluator
             Application.SetCompatibleTextRenderingDefault(false);
 
             var evaluator = new TheMotherEvaluator();
-            string quoteName = "XOM"; // "AAPL" // "RRTL.DE" // ADS.DE
+            string quoteName = "RR.L"; // "AAPL" // "RRTL.DE" // ADS.DE
             evaluator.EvaluateMotherFuckerr(quoteName, false); 
 
             Console.WriteLine(evaluator.shortQuoteNameAndPrice);

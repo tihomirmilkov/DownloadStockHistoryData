@@ -292,6 +292,11 @@ namespace LevermannStrategyAutoEvaluator
                 // use CAC 40 as benchmark index
                 benchmarkQuote = "%255EFCHI"; // ^FCHI
             }
+            else if (stockQuote.Contains(".L"))
+            {
+                // use FTSE 100 as benchmark index
+                benchmarkQuote = "%255EFTSE"; // ^FTSE
+            }
             else
             {
                 // use S&P 500 Index as benchmark index
@@ -440,6 +445,11 @@ namespace LevermannStrategyAutoEvaluator
             {
                 // use CAC 40 Index as benchmark index
                 benchmarkHistoricalData = GetHistoricalData("%255EFCHI", checkIntervalBegin, checkIntervalEnd); // ^FCHI
+            }
+            else if (stockQuote.Contains(".L"))
+            {
+                // use FTSE 100 Index as benchmark index
+                benchmarkHistoricalData = GetHistoricalData("%255EFTSE", checkIntervalBegin, checkIntervalEnd); // ^FTSE
             }
             else
             {
@@ -684,6 +694,7 @@ namespace LevermannStrategyAutoEvaluator
             int fromXETRA = stockQuote.IndexOf(".DE");
             int fromXAMS = stockQuote.IndexOf(".AS");
             int fromXPAR = stockQuote.IndexOf(".PA");
+            int fromXLON = stockQuote.IndexOf(".L");
             string urlAddress;
             if (fromXETRA >= 0)
             {
@@ -696,6 +707,10 @@ namespace LevermannStrategyAutoEvaluator
             else if (fromXPAR >= 0)
             {
                 urlAddress = "https://www.wsj.com/market-data/quotes/FR/XPAR/" + stockQuote.Remove(fromXPAR) + "/research-ratings";
+            }
+            else if (fromXLON >= 0)
+            {
+                urlAddress = "https://www.wsj.com/market-data/quotes/UK/XLON/" + stockQuote.Remove(fromXLON) + "/research-ratings";
             }
             else
             {
